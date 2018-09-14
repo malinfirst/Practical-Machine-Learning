@@ -1,0 +1,15 @@
+library(caret)
+library(AppliedPredictiveModeling)
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+##grep()
+
+predictor<- training[,grep("^IL|diagnosis", names(training))]
+testingIL <- testing[,grep("^IL|diagnosis", names(testing))]
+preprocess<-preProcess(predictor,method = "pca",thresh = 0.8)
+model_glm<-train(predictor$training.diagnosis~.,data=predictor,method="glm")
