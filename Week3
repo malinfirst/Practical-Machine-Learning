@@ -1,0 +1,15 @@
+#Question 3
+
+library(pgmm)
+data(olive)
+olive=olive[,-1]
+
+#colmeans will place the values into a single column so that we will use t() to transpose them
+#and make it a data frame so that which could be apllied to the model
+newdata=as.data.frame(t(colMeans(olive)))
+
+model<-train(Area~., method='rpart', data=olive)
+predict(model,newdata = newdata)
+
+#check to see the Area's data type 
+summary(olive)
