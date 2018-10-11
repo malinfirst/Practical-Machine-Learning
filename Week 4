@@ -1,0 +1,32 @@
+#Week 4
+
+#Question 1
+packages<-c("AppliedPredictiveModeling","caret","ElemStatLearn","pgmm","rpart","gbm",
+            "lubridate","forecast","e1071")
+lapply(packages,library,character.only=TRUE)
+
+
+library(ElemStatLearn)
+
+data(vowel.train)
+
+data(vowel.test)
+
+vowel.train$y<-as.factor(vowel.train$y)
+vowel.test$y<-as.factor(vowel.test$y)
+
+#rf
+set.seed(33833)
+rf<-train(y~.,data = vowel.train,method="rf")
+prediction_rf<-predict(rf,newdata=vowel.test)
+confusionMatrix(prediction_rf,vowel.test$y)
+
+#gbm
+set.seed(33833)
+gbm<-train(y~.,data = vowel.train,method="gbm",verbose=FALSE)
+prediction_gbm<-predict(rf,newdata=vowel.test)
+confusionMatrix(prediction_rf,vowel.test$y)
+
+#agree Accuracy
+agree<-prediction_rf==prediction_gbm
+confusionMatrix(prediction_rf[agree],vowel.test$y[agree])
