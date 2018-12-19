@@ -1,0 +1,21 @@
+#Project
+
+#Loading Data
+getwd()
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "training.csv")
+training<-read.csv("training.csv")
+summary(training$classe)
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "testing.csv")
+testing<-read.csv("testing.csv")
+summary(testing$user_name)
+
+#Try Some Basic Models
+
+#rf
+
+model_rf<-train(classe~.,data=training,method='rf')
+
+
+C_training<-training[complete.cases(training),]
+C_training<-C_training[,-c(1:7)]
