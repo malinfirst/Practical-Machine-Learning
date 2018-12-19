@@ -1,32 +1,149 @@
-#Week 4
+
+
+
+#Quiz 4
 
 #Question 1
-packages<-c("AppliedPredictiveModeling","caret","ElemStatLearn","pgmm","rpart","gbm",
-            "lubridate","forecast","e1071")
+packages<-c("AppliedPredictiveModeling","caret","ElemStatLearn","pgmm"
+            ,"rpart","gbm","lubridate","forecast","e1071")
 lapply(packages,library,character.only=TRUE)
-
+install.packages(packages)
 
 library(ElemStatLearn)
+data("vowel.train")
+data("vowel.test")
 
-data(vowel.train)
 
-data(vowel.test)
-
+#train
+set.seed(33833)
 vowel.train$y<-as.factor(vowel.train$y)
 vowel.test$y<-as.factor(vowel.test$y)
+model_rf<-caret::train(y~.,data=vowel.train,method="rf")
+model_gbm<-train(y~.,data=vowel.train,method="gbm")
+
+#test
+library(forecast)
+prediction_rf<-predict(model_rf,newdata=vowel.test)
+confusionMatrix(prediction_rf,vowel.test$y)
+
+prediction_gbm<-predict(model_gbm,newdata = vowel.test)
+confusionMatrix(prediction_gbm,vowel.test$y)
+
+#two methods agree
+agree<-prediction_gbm==prediction_rf
+confusionMatrix(prediction_gbm[agree],vowel.test$y[agree])
+
+#Question 2
+
+library(caret)
+
+library(gbm)
+
+set.seed(3433)
+
+library(AppliedPredictiveModeling)
+
+data(AlzheimerDisease)
+adData=data.frame(diagnosis,predictors)
+
+inTrain=createDataPartition(adData$diagnosis,p=3/4)[[1]]
+training=adData[inTrain,]
+testing=adData[-inTrain,]
+
+set.seed(62433)
 
 #rf
-set.seed(33833)
-rf<-train(y~.,data = vowel.train,method="rf")
-prediction_rf<-predict(rf,newdata=vowel.test)
-confusionMatrix(prediction_rf,vowel.test$y)
+model_rf<-train(diagnosis~.,data = training,method='rf')
+prediction_rf<-predict(model_rf,newdata = testing)
+result_rf<-confusionMatrix(prediction_rf,testing$diagnosis)
+result_rf
 
 #gbm
-set.seed(33833)
-gbm<-train(y~.,data = vowel.train,method="gbm",verbose=FALSE)
-prediction_gbm<-predict(rf,newdata=vowel.test)
-confusionMatrix(prediction_rf,vowel.test$y)
+model_gbm<-train(diagnosis~.,data=training,method='gbm')
+prediction_gbm<-predict(model_gbm,newdata=testing)
+result_gbm<-confusionMatrix(prediction_gbm,testing$diagnosis)
+result_gbm
 
-#agree Accuracy
-agree<-prediction_rf==prediction_gbm
-confusionMatrix(prediction_rf[agree],vowel.test$y[agree])
+#lda
+model_lda<-train(diagnosis~.,data=training,method='lda')
+prediction_lda<-predict(model_lda,newdata=testing)
+result_lda<-confusionMatrix(prediction_lda,testing$diagnosis)
+result_lda
+
+#Stacking
+pred_df<-data.frame(prediction_rf,prediction_gbm,prediction_lda,diagnosis=testing$diagnosis)
+head(pred_df)
+
+model_stack<-train(diagnosis~.,data = pred_df,method='rf')
+prediction_stack<-predict(model_stack,newdata = testing)
+result_stack<-confusionMatrix(prediction_stack,testing$diagnosis)
+result_stack
+
+
+result_gbm$overall[1]
+result_rf$overall[1]
+result_lda$overall[1]
+result_stack$overall[1]
+
+
+
+#Question 3
+
+#Regularized Regression
+#Lasso Model
+set.seed(3523)
+data("concrete")
+inTrain=createDataPartition(concrete$CompressiveStrength,p=3/4)[[1]]
+training=concrete[inTrain,]
+testing=concrete[-inTrain,]
+
+set.seed(233)
+library(elasticnet)
+model_lasso<-train(CompressiveStrength~.,data = training,method='lasso')
+
+plot.enet(model_lasso$finalModel,xvar = "penalty",use.color = TRUE)
+
+
+
+#Question 4
+#Time Series Forecast
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/gaData.csv",destfile = "visitors.csv")
+dat<-read.csv("visitors.csv",header = TRUE)
+remove(visitor)
+
+library(lubridate)
+
+training=dat[year(dat$date)<2012,]
+testing=dat[year(dat$date)>2011,]
+tstrain=ts(training$visitsTumblr)
+model_ts<-bats(tstrain,use.box.cox = TRUE,use.parallel = TRUE,num.cores = 2)
+prediction_ts<-forecast(model_ts,h=nrow(testing),level=95)
+plot(prediction_ts)
+
+#Accuracy
+sum((testing$visitsTumblr>prediction_ts$lower)&(testing$visitsTumblr<prediction_ts$upper))/nrow(testing)
+
+
+#Question 5
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+library(caret)
+data(concrete)
+inTrain=createDataPartition(concrete$CompressiveStrength,p=3/4)[[1]]
+training=concrete[inTrain,]
+testing=concrete[-inTrain,]
+
+set.seed(325)
+library(e1071)
+model_SVM<-svm(CompressiveStrength~.,data = training)
+pred_SVM<-predict(model_SVM,newdata = testing)
+
+library(DMwR)
+regr.eval(testing$CompressiveStrength,pred_SVM)
+
+#RMSE: Root Mean Square Deviation
+
+sqrt(mean((pred_SVM-testing$CompressiveStrength)^2))
+
