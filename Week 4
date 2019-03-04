@@ -147,3 +147,115 @@ regr.eval(testing$CompressiveStrength,pred_SVM)
 
 sqrt(mean((pred_SVM-testing$CompressiveStrength)^2))
 
+
+
+
+
+
+Update Question 2:
+
+
+#Question 2
+
+library(caret)
+
+library(gbm)
+
+set.seed(3433)
+
+library(AppliedPredictiveModeling)
+
+data(AlzheimerDisease)
+
+adData = data.frame(diagnosis,predictors)
+
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+
+training = adData[inTrain,]
+
+testing = adData[-inTrain,]
+
+set.seed(62433)
+model_rf<-train(diagnosis~.,data = training,method='rf')
+prediction_rf<-predict(model_rf,newdata=testing)
+confusionMatrix(prediction_rf,testing$diagnosis)
+# Accuracy : 0.7927          
+# 95% CI : (0.6889, 0.8743)
+# No Information Rate : 0.7317          
+# P-Value [Acc > NIR] : 0.1297          
+# 
+# Kappa : 0.4481          
+# Mcnemar's Test P-Value : 0.6276          
+#                                           
+#             Sensitivity : 0.5455          
+#             Specificity : 0.8833          
+#          Pos Pred Value : 0.6316          
+#          Neg Pred Value : 0.8413          
+#              Prevalence : 0.2683          
+#          Detection Rate : 0.1463          
+#    Detection Prevalence : 0.2317          
+#       Balanced Accuracy : 0.7144   
+
+model_gbm<-train(diagnosis~.,data=training, method='gbm')
+prediction_gbm<-predict(model_gbm,newdata=testing)
+confusionMatrix(prediction_gbm,testing$diagnosis)
+# Accuracy : 0.7805          
+# 95% CI : (0.6754, 0.8644)
+# No Information Rate : 0.7317          
+# P-Value [Acc > NIR] : 0.1928          
+# 
+# Kappa : 0.4409          
+# Mcnemar's Test P-Value : 1.0000          
+# 
+# Sensitivity : 0.5909          
+# Specificity : 0.8500          
+# Pos Pred Value : 0.5909          
+# Neg Pred Value : 0.8500          
+# Prevalence : 0.2683          
+# Detection Rate : 0.1585          
+# Detection Prevalence : 0.2683          
+# Balanced Accuracy : 0.7205  
+model_lda<-train(diagnosis~.,data=training,method='lda')
+prediction_lda<-predict(model_lda,newdata=testing)
+confusionMatrix(prediction_lda,testing$diagnosis)
+# Accuracy : 0.7683         
+# 95% CI : (0.662, 0.8544)
+# No Information Rate : 0.7317         
+# P-Value [Acc > NIR] : 0.2707         
+# 
+# Kappa : 0.4639         
+# Mcnemar's Test P-Value : 0.1687         
+# 
+# Sensitivity : 0.7273         
+# Specificity : 0.7833         
+# Pos Pred Value : 0.5517         
+# Neg Pred Value : 0.8868         
+# Prevalence : 0.2683         
+# Detection Rate : 0.1951         
+# Detection Prevalence : 0.3537         
+# Balanced Accuracy : 0.7553 
+
+#Stacked Model with RF
+Pred_df<-data.frame(prediction_rf,prediction_gbm,prediction_lda,diagnosis=testing$diagnosis)
+model_stack_rf<-train(diagnosis~.,data=Pred_df,method='rf')
+prediction_stack_rf<-predict(model_stack_rf,newdata = testing)
+confusionMatrix(prediction_stack_rf,testing$diagnosis)
+
+# Accuracy : 0.8049          
+# 95% CI : (0.7026, 0.8842)
+# No Information Rate : 0.7317          
+# P-Value [Acc > NIR] : 0.08208         
+# 
+# Kappa : 0.503           
+# Mcnemar's Test P-Value : 1.00000         
+#                                           
+#             Sensitivity : 0.6364          
+#             Specificity : 0.8667          
+#          Pos Pred Value : 0.6364          
+#          Neg Pred Value : 0.8667          
+#              Prevalence : 0.2683          
+#          Detection Rate : 0.1707          
+#    Detection Prevalence : 0.2683          
+#       Balanced Accuracy : 0.7515          
+#                                           
+#        'Positive' Class : Impaired 
