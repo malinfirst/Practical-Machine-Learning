@@ -1,6 +1,8 @@
-#Project
-
-#Loading Data
+##Project
+library(caret)
+library(rpart)
+library(rattle)
+##Loading Data
 getwd()
 download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "training.csv")
 training<-read.csv("training.csv")
@@ -14,12 +16,46 @@ summary(testing$user_name)
 
 str(training)
 
-dim(training)[1]
+dim(training)
 
 c_training<-training[,-which(colSums(is.na(training)|training=="")>0.9*dim(training)[1])]
 c_training<-c_training[,-c(1:7)]
 
+
 c_testing<-testing[,-which(colSums(testing==""|is.na(testing))>0.9&dim(testing)[1])]
 c_testing<-c_testing[,-c(1:7)]
 
+#create train and test dataset inside Training Dataset
+set.seed(1314)
+training_index<-createDataPartition(c_training$classe,p=0.75,list=FALSE)
+new_training<-c_training[training_index,]
+new_testing<-c_training[-training_index,]
 
+#Classification Trees
+set.seed(520)
+traincontrol<-trainControl(method="cv",number = 5)
+model_rpart<-train(classe~.,data = new_training,method='rpart',trControl=traincontrol)
+fancyRpartPlot(model_rpart$finalModel)
+prediction<-predict(model_rpart,newdata=new_testing)
+confusionMatrix(prediction,new_testing$classe)
+
+#Train with Random Forests
+set.seed(6688)
+model_rf<-train(classe~.,data=new_training,method="rf",trControl=traincontrol)
+prediction_rf<-predict(model_rf,newdata=new_testing)
+confusionMatrix(prediction_rf,new_testing$classe)
+plot(model_rf)
+#Rank the Importance of the features
+varImp(model_rf)
+
+
+#Train with Gradient Boosting Machine
+set.seed(12580)
+model_gbm<-train(classe~.,data=new_training,method="gbm",verbose=FALSE,trControl=traincontrol)
+prediction_gbm<-predict(model_gbm,newdata=new_testing)
+confusionMatrix(prediction_gbm,new_testing$classe)
+plot(model_gbm)
+
+#After comparison, we decided to use Random Forest to predict the final values
+prediction_final<-predict(model_rf,newdata=c_testing)
+prediction_final
