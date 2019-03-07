@@ -1,0 +1,143 @@
+---
+title: "Practical Mahcine Learning_Project"
+author: "Lin Ma"
+date: "March 6, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Project
+
+**Background**
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+##Libraries
+
+```{r}
+library(caret)
+library(rpart)
+library(rattle)
+```
+
+
+##Loading Data
+
+```{r Loading Data, echo=TRUE}
+getwd()
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "training.csv")
+training<-read.csv("training.csv")
+summary(training$classe)
+
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "testing.csv")
+testing<-read.csv("testing.csv")
+summary(testing$user_name)
+
+```
+
+##Clean Data
+
+Take a look at the Data and try to reduce the effect of missing values.
+
+```{r}
+str(training)
+
+dim(training)
+
+c_training<-training[,-which(colSums(is.na(training)|training=="")>0.9*dim(training)[1])]
+c_training<-c_training[,-c(1:7)]
+
+
+c_testing<-testing[,-which(colSums(testing==""|is.na(testing))>0.9&dim(testing)[1])]
+c_testing<-c_testing[,-c(1:7)]
+```
+We have cleaned up all the columns with over 90% NA values.
+
+##create train and test dataset inside Training Dataset
+
+```{r}
+set.seed(1314)
+training_index<-createDataPartition(c_training$classe,p=0.75,list=FALSE)
+new_training<-c_training[training_index,]
+new_testing<-c_training[-training_index,]
+```
+
+
+##Classification Trees
+
+First, letr's try using the classification tree.
+```{r}
+set.seed(520)
+traincontrol<-trainControl(method="cv",number = 5)
+model_rpart<-train(classe~.,data = new_training,method='rpart',trControl=traincontrol)
+```
+
+Let's see the plot of the final model.
+
+```{r echo=FALSE}
+fancyRpartPlot(model_rpart$finalModel)
+```
+
+
+```{r}
+prediction<-predict(model_rpart,newdata=new_testing)
+confusionMatrix(prediction,new_testing$classe)
+```
+
+The accuracy we get is even under 50%, which means our variables in this model couldn't explain the dependent variable very well. 
+
+##Train with Random Forests
+
+```{r}
+set.seed(6688)
+model_rf<-train(classe~.,data=new_training,method="rf",trControl=traincontrol)
+prediction_rf<-predict(model_rf,newdata=new_testing)
+confusionMatrix(prediction_rf,new_testing$classe)
+```
+
+We get a huge improvement based on the RF model and the Accuracy is 99.35% which is almost perfect but also reminds us of overfitting issues.
+However,during TrainControl, we have used Cross validation to prevent issues happening.
+
+Take a look at the relationship between random selected predictors and the accuracy.
+
+```{r}
+plot(model_rf)
+```
+
+
+Rank the Importance of the features
+```{r}
+varImp(model_rf)
+```
+We Could see 'roll_belt' plays a pivotal role in this model. If I can do another analysis, I will dig more in to the relationship between roll_belt and classe.
+
+##Train with Gradient Boosting Machine
+
+```{r}
+set.seed(12580)
+model_gbm<-train(classe~.,data=new_training,method="gbm",verbose=FALSE,trControl=traincontrol)
+prediction_gbm<-predict(model_gbm,newdata=new_testing)
+confusionMatrix(prediction_gbm,new_testing$classe)
+```
+The Accuracy of GBM model is 96% which is also impressive.  
+
+```{r echo=FALSE}
+plot(model_gbm)
+```
+
+From the plot, we can clearly see the Accuracy boosting by each iteration.
+
+
+##Conclusion
+
+After comparison, we decided to use Random Forest to predict the final values.
+
+```{r}
+prediction_final<-predict(model_rf,newdata=c_testing)
+prediction_final
+```
+
