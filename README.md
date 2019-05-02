@@ -1,4 +1,4 @@
 # Practical-Machine-Learning
 Tricky questions and solutions of Practical Machine Learning in Coursera
 
-https://malinfirst.github.io/Practical-Machine-Learning/
+https://malinfirst.github.io/Practical-Machine-Learning/index.html
